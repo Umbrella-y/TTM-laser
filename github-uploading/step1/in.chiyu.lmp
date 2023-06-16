@@ -1,0 +1,31 @@
+#basic configrations
+dimension 3
+units metal
+atom_style atomic
+atom_modify map array
+boundary p p p
+#read data from data file
+read_data test.data    
+##pair settings for the Al
+pair_style eam/alloy
+pair_coeff * * Al-2009.eam.alloy Al
+timestep 0.001
+neighbor 0.3 bin
+neigh_modify every 5 delay 0 check yes
+
+##nvt-fixings for the simulation
+velocity all create 300 123123 dist gaussian
+fix t all npt temp 300 300 0.1 iso 0 0 1 
+#minimize 1.0e-4 1.0e-6 100 1000
+##energy computations settings
+compute peatom all pe/atom
+compute keatom all ke/atom
+
+thermo 100
+
+##----------------------------------------------
+dump a all custom 100 chiyu.atom id type x y z c_keatom c_peatom
+thermo_style custom step temp pxx pyy ke pe #f_twotemp[1] f_twotemp[2]
+run 10000
+write_data test1.data  
+

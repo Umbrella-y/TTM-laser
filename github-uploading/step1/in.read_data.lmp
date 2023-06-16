@@ -1,0 +1,51 @@
+#basic configrations
+dimension 3
+units metal
+atom_style atomic
+atom_modify map array
+boundary f f p
+#read data from data file
+read_data test.data    
+##pair settings for the Al
+pair_style eam/alloy
+pair_coeff * * Al-2009.eam.alloy Al
+timestep 0.00001
+neighbor 0.3 bin
+neigh_modify every 5 delay 0 check yes
+
+##nvt-fixings for the simulation
+
+fix t all nve
+fix xwall all wall/reflect xlo EDGE xhi EDGE
+fix ywall all wall/reflect ylo EDGE yhi EDGE
+#minimize 1.0e-4 1.0e-6 100 1000
+##energy computations settings
+compute peatom all pe/atom
+compute keatom all ke/atom
+
+thermo 100
+
+##----------------------------------------------
+
+unfix t 
+dump a all custom 1000 dump0.atom id type x y z c_keatom c_peatom
+##----------------------------------------------
+#region fixs block INF INF INF INF INF -225 units box
+#region twotemp block INF INF INF INF -225 INF units box
+#group twotemp region twotemp
+#group fixs region fixs
+#fix sf fixs setforce 0 0 0
+#v#elocity fixs set 0 0 0 sum no
+##----------------------------------------------
+fix tt all nve
+#write_data initiate-state.data
+## out put settings
+compute binchunk all chunk/atom bin/2d x lower 0.01 y lower 0.02 units reduced
+compute ctc all temp/chunk binchunk temp
+fix bi all ave/chunk 100 1 100 binchunk density/number file density-profile.txt
+fix ti all ave/time 100 1 100 c_ctc[1] file lattice-temperature-profile.txt mode vector
+
+thermo_style custom step temp pxx pyy ke pe #f_twotemp[1] f_twotemp[2]
+run 100
+write_data relaxed-500ps.data
+
